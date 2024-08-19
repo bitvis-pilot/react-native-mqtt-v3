@@ -68,21 +68,28 @@ class AlarmPingSender implements MqttPingSender {
 
 	@Override
 	public void start() {
-		String action = MqttServiceConstants.PING_SENDER
-				+ comms.getClient().getClientId();
-		Log.d(TAG, "Register alarmreceiver to MqttService"+ action);
-		service.registerReceiver(alarmReceiver, new IntentFilter(action));
+			String action = MqttServiceConstants.PING_SENDER + comms.getClient().getClientId();
+			Log.d(TAG, "Register alarmreceiver to MqttService " + action);
 
-    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-      pendingIntent = PendingIntent.getBroadcast(service, 0, new Intent(
-        action), PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-    } else {
-      pendingIntent = PendingIntent.getBroadcast(service, 0, new Intent(
-        action), PendingIntent.FLAG_UPDATE_CURRENT);
-    }
+			IntentFilter intentFilter = new IntentFilter(action);
 
-		schedule(comms.getKeepAlive());
-		hasStarted = true;
+			// Specify the export status based on Android version
+			if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+					service.registerReceiver(alarmReceiver, intentFilter, Context.RECEIVER_NOT_EXPORTED);
+			} else {
+					service.registerReceiver(alarmReceiver, intentFilter);
+			}
+
+			if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+					pendingIntent = PendingIntent.getBroadcast(service, 0, new Intent(action),
+							PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+			} else {
+					pendingIntent = PendingIntent.getBroadcast(service, 0, new Intent(action),
+							PendingIntent.FLAG_UPDATE_CURRENT);
+			}
+
+			schedule(comms.getKeepAlive());
+			hasStarted = true;
 	}
 
 	@Override
