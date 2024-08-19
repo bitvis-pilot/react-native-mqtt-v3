@@ -778,24 +778,34 @@ public class MqttService extends Service implements MqttTraceHandler {
 
   @SuppressWarnings("deprecation")
   private void registerBroadcastReceivers() {
-		if (networkConnectionMonitor == null) {
-			networkConnectionMonitor = new NetworkConnectionIntentReceiver();
-			registerReceiver(networkConnectionMonitor, new IntentFilter(
-					ConnectivityManager.CONNECTIVITY_ACTION));
-		}
+      if (networkConnectionMonitor == null) {
+          networkConnectionMonitor = new NetworkConnectionIntentReceiver();
+          IntentFilter networkFilter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
 
-		if (Build.VERSION.SDK_INT < 14 /**Build.VERSION_CODES.ICE_CREAM_SANDWICH**/) {
-			// Support the old system for background data preferences
-			ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
-			backgroundDataEnabled = cm.getBackgroundDataSetting();
-			if (backgroundDataPreferenceMonitor == null) {
-				backgroundDataPreferenceMonitor = new BackgroundDataPreferenceReceiver();
-				registerReceiver(
-						backgroundDataPreferenceMonitor,
-						new IntentFilter(
-								ConnectivityManager.ACTION_BACKGROUND_DATA_SETTING_CHANGED));
-			}
-		}
+          // Specify export status based on Android version
+          if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+              registerReceiver(networkConnectionMonitor, networkFilter, Context.RECEIVER_NOT_EXPORTED);
+          } else {
+              registerReceiver(networkConnectionMonitor, networkFilter);
+          }
+      }
+
+      if (Build.VERSION.SDK_INT < 14 /** Build.VERSION_CODES.ICE_CREAM_SANDWICH **/) {
+          // Support the old system for background data preferences
+          ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+          backgroundDataEnabled = cm.getBackgroundDataSetting();
+          if (backgroundDataPreferenceMonitor == null) {
+              backgroundDataPreferenceMonitor = new BackgroundDataPreferenceReceiver();
+              IntentFilter backgroundDataFilter = new IntentFilter(ConnectivityManager.ACTION_BACKGROUND_DATA_SETTING_CHANGED);
+
+              // Specify export status based on Android version
+              if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                  registerReceiver(backgroundDataPreferenceMonitor, backgroundDataFilter, Context.RECEIVER_NOT_EXPORTED);
+              } else {
+                  registerReceiver(backgroundDataPreferenceMonitor, backgroundDataFilter);
+              }
+          }
+      }
   }
 
   private void unregisterBroadcastReceivers(){
